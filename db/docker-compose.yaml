@@ -1,0 +1,10 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:${SURREALDB_VERSION}
+    ports: 
+      - ${SURREALDB_PORT}:8000
+    command: start -u ${SURREALDB_USER} -p ${SURREALDB_PASSWORD} -l ${SURREALDB_LOG_LEVEL} -- file://backup
+    volumes:
+      - type: bind
+        source: ${SURREALDB_BACKUP}
+        target: /backup
