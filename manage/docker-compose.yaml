@@ -1,0 +1,24 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    restart: unless-stopped
+    volumes:
+      - portainer_data:/data
+      - ${SSL_CERT_DIR}:/certs:ro
+      - ${DOCKER_HOST}:/var/run/docker.sock
+    command: --sslcert /certs/fullchain.pem --sslkey /certs/privkey.pem
+
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - ${NGINX_HTTPS_PORT}:443
+    volumes:
+      - ${SSL_CERT_DIR}:/certs:ro
+      - ${NGINX_CONF}:/etc/nginx/nginx.conf:ro
+      - ${NGINX_TEMPLATES}:/etc/nginx/templates:ro
+    environment:
+      PORTAINER_SERVER_NAME: ${PORTAINER_SERVER_NAME}
+
+volumes:
+  portainer_data:
