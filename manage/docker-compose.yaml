@@ -22,3 +22,8 @@ services:
 
 volumes:
   portainer_data:
+
+networks:
+  default:
+    name: manage
+    external: true

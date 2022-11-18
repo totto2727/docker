@@ -15,4 +15,15 @@ services:
     environment:
       SITE_SERVER_NAME: ${SITE_SERVER_NAME}
       
+  # keycloak:
+  #   image: quay.io/keycloak/keycloak:20.0.0
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ${SSL_CERT_DIR}:/certs:ro
+  #   environment:
+  #     AUTH_SERVER_NAME: ${AUTH_SERVER_NAME}
 
+networks:
+  default:
+    name: web
+    external: true
