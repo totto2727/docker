@@ -1,0 +1,119 @@
+services:
+  nginx-manage:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - ${NGINX_MANAGE_HTTPS_PORT}:443
+    volumes:
+      - ${SSL_CERT_DIR}:/certs:ro
+      - ${NGINX_MANAGE_CONF}:/etc/nginx/nginx.conf:ro
+      - ${NGINX_MANAGE_TEMPLATES}:/etc/nginx/templates:ro
+    environment:
+      PORTAINER_SERVER_NAME: ${PORTAINER_SERVER_NAME}
+      RABBITMQ_MANAGE_SERVER_NAME: ${RABBITMQ_MANAGE_SERVER_NAME}
+      RABBITMQ_DEV_MANAGE_SERVER_NAME: ${RABBITMQ_DEV_MANAGE_SERVER_NAME}
+    networks:
+      - portainer
+      - rabbitmq
+      - rabbitmq-dev
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    restart: unless-stopped
+    volumes:
+      - portainer-data:/data
+      - ${SSL_CERT_DIR}:/certs:ro
+      - ${DOCKER_HOST}:/var/run/docker.sock
+    command: --sslcert /certs/fullchain.pem --sslkey /certs/privkey.pem
+    networks:
+      - portainer
+    
+  rabbitmq:
+    image: rabbitmq:${RABBITMQ_VERSION}
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - ${SSL_CERT_DIR}:/certs:ro
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - type: volume
+        source: rabbitmq-data
+        target: /var/lib/rabbitmq
+        volume:
+          nocopy: true
+    networks:
+      - rabbitmq
+
+  rabbitmq-dev:
+    image: rabbitmq:${RABBITMQ_VERSION}
+    hostname: rabbitmq-dev
+    ports:
+      - ${RABBITMQ_DEV_HTTP_PORT}:5672
+      - ${RABBITMQ_DEV_HTTPS_PORT}:5671
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEV_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEV_DEFAULT_PASS}
+    volumes:
+      - ${SSL_CERT_DIR}:/certs:ro
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - type: volume
+        source: rabbitmq-dev-data
+        target: /var/lib/rabbitmq
+        volume:
+          nocopy: true
+    networks:
+      - rabbitmq-dev
+
+  surrealdb:
+    image: surrealdb/surrealdb:${SURREALDB_VERSION}
+    restart: unless-stopped
+    command: start -u ${SURREALDB_USER} -p ${SURREALDB_PASSWORD} -l ${SURREALDB_LOG_LEVEL} -- file://surrealdb-data
+    volumes:
+      - type: volume
+        source: surrealdb-data
+        target: /surrealdb-data
+        volume:
+          nocopy: true
+    networks:
+      - surrealdb
+
+  redis-dev:
+    image: redis/redis-stack-server
+    ports:
+      - "6379:6379"
+    volumes:
+      - type: volume
+        source: redis-dev-data
+        target: /data
+        volume:
+          nocopy: true
+    networks:
+      - redis-dev
+
+
+volumes:
+  portainer-data:
+  surrealdb-data:
+  redis-dev-data:
+  rabbitmq-data:
+  rabbitmq-dev-data:
+
+networks:
+  portainer:
+    external: true
+
+  surrealdb:
+    external: true
+
+  redis-db:
+    external: true
+
+  redis-dev:
+    external: true
+
+  rabbitmq:
+    external: true
+
+  rabbitmq-dev:
+    external: true
